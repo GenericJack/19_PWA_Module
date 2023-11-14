@@ -19,12 +19,27 @@ const pageCache = new CacheFirst({
   ],
 });
 
-warmStrategyCache({
+pageCache.warmStrategyCache({
   urls: ['/index.html', '/'],
-  strategy: pageCache,
+  
 });
 
-registerRoute(({ request }) => request.mode === 'navigate', pageCache);
+registerRoute(({ request }) => request.mode === 'navigate',
+({ event }) => pageCache.handle({ event })
+);
 
 // TODO: Implement asset caching
-registerRoute();
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'image-cache',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+      new ExpirationPlugin({
+        maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+      }),
+    ],
+  })
+);
